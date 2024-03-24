@@ -37,4 +37,4 @@ def predict_scoringcredit(data: ScoringCredit):
 
 #    Will run on http://127.0.0.1:8000
 if __name__ == '__main__':
-    uvicorn.run(app, host='localhost', port=8000)
+    uvicorn.run(app, host='13.39.148.129', port=8000)
