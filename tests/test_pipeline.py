@@ -10,7 +10,7 @@ def sample_data():
     # Créer un échantillon de données pour les tests
     df = pd.read_csv('data/preprocessing_train.csv',nrows=10)
 
-    best_features = pd.read_csv('data/best_fetaures.csv')
+    best_features = pd.read_csv('data/sample_test.csv')
     feats = best_features['feature'].unique()
     feats = np.append(feats,'INTERET_CUMULE' )
     df = df[df['TARGET'].notnull()]
