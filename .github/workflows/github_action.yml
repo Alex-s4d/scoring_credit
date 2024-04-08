@@ -1,1 +1,18 @@
 
+name: Tests unitaires
+
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout du code
+      uses: actions/checkout@v2
+
+    - name: Installer les dépendances
+      run: pip install -r requirements.txt  # Assurez-vous d'installer les dépendances nécessaires
+
+    - name: Exécuter les tests
+      run: pytest -m tests/
