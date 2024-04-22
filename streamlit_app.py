@@ -51,7 +51,7 @@ def main():
     else:
         # Charger le fichier CSV interne au projet contenant les IDs
         #id_file = "/home/work/Desktop/OCR/scoring_credit/data/sample_test.csv"
-        id_file = "/home/work/Desktop/OCR/scoring_credit/data/preprocessing_train.csv"
+        id_file = "data/preprocessing_train.csv"
         df = pd.read_csv(id_file)
 
         # Afficher les IDs disponibles
