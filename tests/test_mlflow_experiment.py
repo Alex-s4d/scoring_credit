@@ -14,7 +14,7 @@ def setup_experiment():
 
     # Initialiser les paramètres
     model = RandomForestClassifier(random_state=42)
-    custom_fbeta_score = f1_score  # Utiliser le f1_score comme mesure personnalisée pour le test
+    custom_fbeta_score = f1_score
     experiment = MLFlowExperiment(model, X_train, y_train, X_test, y_test, custom_fbeta_score)
 
     return experiment

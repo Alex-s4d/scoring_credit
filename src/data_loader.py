@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.model_selection import train_test_split
 from collections import Counter
 # Importation du package
@@ -171,12 +171,12 @@ def preprocessing(Sampling=None):
         numeric_columns = df[feats].select_dtypes(include=['int', 'float']).columns
 
         # Initialiser le MinMaxScaler
-        scaler = MinMaxScaler()
+        scaler = StandardScaler()
 
         # Normaliser les colonnes sélectionnées
         df[numeric_columns] = scaler.fit_transform(df[numeric_columns])
 
-        median_values = df[feats].median()
+        median_values = df[numeric_columns].median()
 
         # Imputer les valeurs manquantes avec la médiane
         df.fillna(median_values, inplace=True) 

@@ -55,13 +55,19 @@ def main():
     # Utiliser la pipeline pour effectuer des prédictions
     predictions = pipeline.predict(new_data)
 
-    joblib.dump(pipeline, 'models/pipeline_final.pkl')
-
     sub_preds = pipeline.predict_proba(new_data)[:, 1]
 
     submission_df = pd.DataFrame({'SK_ID_CURR': new_data['SK_ID_CURR'], 'TARGET': sub_preds})
-
     submission_df.to_csv('output/submission.csv',index=False)
+
+    new_data['TARGET'] = predictions
+
+    new_data['test'] = True
+    data['test'] = False
+
+    new_df = pd.concat([data, new_data])
+
+    new_df.to_csv('output/new_df.csv',index=False)
 
 
 

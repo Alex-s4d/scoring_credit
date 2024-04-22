@@ -16,8 +16,9 @@ from sklearn.model_selection import StratifiedKFold
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import OneSidedSelection
 from collections import Counter 
-
-
+from sklearn.linear_model import LogisticRegression
+from sklearn.dummy import DummyClassifier
+import mlflow.sklearn
 
 
 from src.data_loader2 import preprocessing, create_weight
@@ -27,43 +28,72 @@ def custom_fbeta_score(y_true, y_pred):
     return fbeta_score(y_true, y_pred, beta=weight)
 
 #Hyperoptim
-def hyperoptim(X_train, y_train):
+def hyperoptim(X_train, y_train, model='LGBM'):
 
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    
-    scorer = make_scorer(custom_fbeta_score)
-    
-    # Définir l'espace des hyperparamètres à optimiser
-    param_space = {
-        'n_estimators': Integer(100, 1000),
-        'learning_rate': Real(0.01, 0.1, prior='log-uniform'),
-        'num_leaves': Integer(20, 50),
-        'subsample': Real(0.8, 1.0),
-        'colsample_bytree': Real(0.8, 1.0),
-        'max_depth': Integer(5, 10),
-        'reg_alpha': Real(0.01, 0.1, prior='log-uniform'),
-        'reg_lambda': Real(0.01, 0.1, prior='log-uniform'),
-        'min_split_gain': Real(0.01, 0.1, prior='log-uniform'),
-        'min_child_weight': Integer(1, 20)
-    }
-    
-    # Initialiser le classifieur LGBM
-    clf = lgb.LGBMClassifier(silent=-1)
-    
-    # Initialiser BayesSearchCV avec le classifieur, l'espace des hyperparamètres et la validation croisée
-    bayes_search = BayesSearchCV(clf, param_space, cv=cv, scoring='f1', n_jobs=-1)
-    
-    # Effectuer l'optimisation des hyperparamètres sur les données d'entraînement
-    bayes_search.fit(X_train, y_train)
-    
-    # Obtenir les meilleurs hyperparamètres
-    best_params = bayes_search.best_params_
-    print("Meilleurs hyperparamètres trouvés :", best_params)
-    
-    # Utiliser les meilleurs hyperparamètres pour initialiser le modèle final
-    best_clf = lgb.LGBMClassifier(silent=-1, **best_params)
+    if model=='LGBM':
 
-    return best_clf, best_params
+        mlflow.lightgbm.autolog()
+
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        
+        scorer = make_scorer(custom_fbeta_score)
+        
+        # Définir l'espace des hyperparamètres à optimiser
+        param_space = {
+            'n_estimators': Integer(100, 1000),
+            'learning_rate': Real(0.01, 0.1, prior='log-uniform'),
+            'num_leaves': Integer(20, 50),
+            'subsample': Real(0.8, 1.0),
+            'colsample_bytree': Real(0.8, 1.0),
+            'max_depth': Integer(5, 10),
+            'reg_alpha': Real(0.01, 0.1, prior='log-uniform'),
+            'reg_lambda': Real(0.01, 0.1, prior='log-uniform'),
+            'min_split_gain': Real(0.01, 0.1, prior='log-uniform'),
+            'min_child_weight': Integer(1, 20)
+        }
+        
+        # Initialiser le classifieur LGBM
+        clf = lgb.LGBMClassifier(silent=-1)
+        
+        # Initialiser BayesSearchCV avec le classifieur, l'espace des hyperparamètres et la validation croisée
+        bayes_search = BayesSearchCV(clf, param_space, cv=cv, scoring='roc_auc', n_jobs=-1)
+        
+        # Effectuer l'optimisation des hyperparamètres sur les données d'entraînement
+        bayes_search.fit(X_train, y_train)
+        
+        # Obtenir les meilleurs hyperparamètres
+        best_params = bayes_search.best_params_
+        print("Meilleurs hyperparamètres trouvés :", best_params)
+        
+        # Utiliser les meilleurs hyperparamètres pour initialiser le modèle final
+        best_clf = lgb.LGBMClassifier(silent=-1, **best_params)
+
+        return best_clf, best_params
+    
+    elif model == 'LogisticRegression':
+
+        mlflow.sklearn.autolog()
+
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+        best_clf = LogisticRegression()
+
+        best_params = None
+
+        return best_clf, best_params
+    
+    elif model == 'DummyClassifier':
+            cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+            best_clf = DummyClassifier()
+
+            best_params = None
+
+            return best_clf, best_params
+
+    
+
+    
 
 
 # Training
@@ -254,7 +284,7 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
             y_train_fold, y_test_fold = y_train.iloc[train_index], y_train.iloc[test_index]
             
             # Appliquer l'undersampling sur les données d'entraînement de ce fold
-            X_resampled, y_resampled = oss.fit_resample(X_train_fold, y_train_fold)
+            X_train_resampled , y_train_resampled = oss.fit_resample(X_train_fold, y_train_fold)
             
             # Adapter le modèle sur les données d'entraînement de ce fold
             best_clf.fit(X_train_resampled, y_train_resampled)
@@ -294,7 +324,7 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
         print("Moyenne des scores F1 :", np.mean(scores_f1))
 
         # Test
-        X_train_resampled, y_train_resampled = oss.fit_resample(X_test, y_train)
+        X_train_resampled, y_train_resampled = oss.fit_resample(X_train, y_train)
 
         # Adapter le modèle sur les données d'entraînement resamplées
         best_clf.fit(X_train_resampled, y_train_resampled)
@@ -430,16 +460,12 @@ mlflow.set_experiment(experiment_name)
 
 with mlflow.start_run():
 
-
-
-    mlflow.lightgbm.autolog()
-
     weight = create_weight()
 
     X_train, X_test, y_train, y_test = preprocessing(Sampling=None)
 
-    best_model, best_params = hyperoptim(X_train,y_train)
+    best_model, best_params = hyperoptim(X_train,y_train,model='LGBM')
 
     model = imbalanced_training(X_train,X_test,y_train,y_test,best_model,best_params, imbalance='SMOTE')
 
-    mlflow.lightgbm.log_model(model, "lightgbm_model")
+    mlflow.lightgbm.log_model(model, "LGBM_model")
