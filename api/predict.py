@@ -123,7 +123,7 @@ def main(new_data):
             scoring_credit_dict[key] = "{:.6f}".format(value)
 
     # Définissez l'URL de votre API
-    url = 'http://localhost:8000/predict'
+    url = 'http://127.0.0.1:8000/predict'
 
     # Envoyez la requête POST à votre API avec les données JSON
     response = requests.post(url, json=scoring_credit_dict)
@@ -136,7 +136,7 @@ def main(new_data):
         # Affichez le code d'erreur en cas d'échec de la requête
         print("Erreur lors de la requête :", response.status_code)
 
-    return str(response.json())
+    return response.json()
 
 if __name__ == "__main__":
         main()
