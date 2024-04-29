@@ -43,6 +43,6 @@ jobs:
             sudo systemctl restart docker
             sudo docker stop docker_scoring_credit
             sudo docker rm docker_scoring_credit
-            sudo docker build --no-cache -t docker_scoring_credit .
+            sudo docker build -t docker_scoring_credit .
             sudo docker run -d -p 8501:8501 -p 8000:8000 --name docker_scoring_credit docker_scoring_credit:latest
 
