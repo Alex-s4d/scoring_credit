@@ -32,9 +32,6 @@ jobs:
           docker build -t docker_scoring_credit .
           docker tag docker_scoring_credit:latest ec2-13-39-148-129.eu-west-3.compute.amazonaws.com/docker_scoring_credit:latest
 
-      - name: Push de l'image Docker vers le registre
-        run: docker push ec2-13-39-148-129.eu-west-3.compute.amazonaws.com/docker_scoring_credit:latest
-
       - name: SSH into EC2 and redeploy Docker container
         uses: appleboy/ssh-action@master
         with:
