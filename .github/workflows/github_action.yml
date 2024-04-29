@@ -27,20 +27,17 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v2
 
-      - name: Build et tag de l'image Docker
-        run: |
-          docker build -t docker_scoring_credit .
-          docker tag docker_scoring_credit:latest ec2-13-39-148-129.eu-west-3.compute.amazonaws.com/docker_scoring_credit:latest
-
-      - name: SSH into EC2 and redeploy Docker container
+      - name: Connexion SSH vers l'instance EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22 
           script: |
-            docker stop docker_scoring_credit
-            docker rm docker_scoring_credit
-            docker pull ec2-13-39-148-129.eu-west-3.compute.amazonaws.com/docker_scoring_credit:latest
-            docker run -d -p 8501:8501 -p 8000:8000 ec2-13-39-148-129.eu-west-3.compute.amazonaws.com/docker_scoring_credit:latest
+            cd scoring_credit
+            git pull
+            docker build -t docker_scoring_credit .
+            docker rm docker_scoring_credit || true 
+            docker run -d -p 8501:8501 -p 8000:8000 --name docker_scoring_credit docker_scoring_credit:latest
 
