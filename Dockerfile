@@ -8,7 +8,6 @@ WORKDIR /app
 
 # Installation des paquets nécessaires
 RUN apt-get update && apt-get install -y \
-    build-essential \
     curl \
     software-properties-common \
     git \
@@ -23,7 +22,6 @@ RUN pip install plotly
 RUN pip install cufflinks
 RUN pip3 install -r requirements.txt
 RUN pip3 cache purge
-
 
 # Ajouter le répertoire local de l'utilisateur à PATH pour inclure les exécutables
 ENV PATH="${PATH}:/root/.local/bin"
