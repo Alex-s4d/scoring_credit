@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
 
 # Cloner le dépôt git dans le répertoire de travail actuel
 RUN git clone https://github.com/Alex-s4d/scoring_credit.git .
+RUN git pull
 
 # Installer les dépendances Python
 RUN pip install plotly
