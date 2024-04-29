@@ -27,6 +27,9 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v2
 
+      - name: Nettoyer le cache Docker
+        run: docker system prune --all --force --volumes
+
       - name: Connexion SSH vers l'instance EC2
         uses: appleboy/ssh-action@master
         with:
