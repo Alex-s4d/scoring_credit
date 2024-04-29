@@ -84,7 +84,7 @@ def main():
             feature_values_df['Mean_Target_1'] = feature_values_mean_target_1.values
 
             for feature_name in top_feature_names:
-                st.subheader(f"Graphique pour '{feature_name}'")
+                st.subheader(f"Statistiques pour '{feature_name}'")
 
                 # Get the feature value and its mean
                 feature_value = feature_values_df.loc[feature_values_df['Feature'] == feature_name, 'Value'].iloc[0]
@@ -193,7 +193,7 @@ def main():
             feature_values_df['Mean_Target_1'] = feature_values_mean_target_1.values
 
             for feature_name in top_feature_names:
-                st.subheader(f"Graphique pour '{feature_name}'")
+                st.subheader(f"Statistiques pour '{feature_name}'")
 
                 # Get the feature value and its mean
                 feature_value = feature_values_df.loc[feature_values_df['Feature'] == feature_name, 'Value'].iloc[0]
