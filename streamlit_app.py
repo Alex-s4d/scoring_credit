@@ -8,7 +8,7 @@ import ast
 def main():
     st.title('Dashboard de Prédictions')
 
-    id_file = "data/preprocessing_train.csv"
+    id_file = "data/sample_test.csv"
     df = pd.read_csv(id_file, nrows=10000)
 
     # Choix entre drag and drop et sélection d'un ID
