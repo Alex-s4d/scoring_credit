@@ -1,18 +1,49 @@
+name: Tests unitaires et déploiement Docker
 
-name: Tests unitaires
-
-on: push
+on:
+  push:
+    branches:
+      - main 
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout du code
-      uses: actions/checkout@v2
+      - name: Checkout du code
+        uses: actions/checkout@v2
 
-    - name: Installer les dépendances
-      run: pip install -r requirements.txt
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
 
-    - name: Exécuter les tests
-      run: pytest tests/
+      - name: Exécuter les tests
+        run: pytest tests/
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    needs: test  
+    
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v2
+
+      - name: Build et tag de l'image Docker
+        run: |
+          docker build -t docker_scoring_credit .
+          docker tag docker_scoring_credit:latest ec2-13-39-148-129.eu-west-3.compute.amazonaws.com/docker_scoring_credit:latest
+
+      - name: Push de l'image Docker vers le registre
+        run: docker push your-aws-account-id.dkr.ecr.your-region.amazonaws.com/docker_scoring_credit:latest
+
+      - name: SSH into EC2 and redeploy Docker container
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker stop docker_scoring_credit
+            docker rm docker_scoring_credit
+            docker pull ec2-13-39-148-129.eu-west-3.compute.amazonaws.com/docker_scoring_credit:latest
+            docker run -d -p 8501:8501 -8000:8000 ec2-13-39-148-129.eu-west-3.compute.amazonaws.com/docker_scoring_credit:latest
+
