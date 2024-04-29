@@ -37,7 +37,6 @@ jobs:
           script: |
             cd scoring_credit/
             git pull
-            sudo docker ps
             sudo docker stop docker_scoring_credit || true
             sudo docker rm docker_scoring_credit || true
             sudo docker build -t docker_scoring_credit .
