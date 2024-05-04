@@ -6,10 +6,10 @@ import json
 import ast
 
 def main():
-    st.title('Dashboard de Prédictions')
+    st.title('Dashboard Scoring crédit :')
 
-    id_file = "data/sample_test.csv"
-    df = pd.read_csv(id_file, nrows=10000)
+    id_file = "data/preprocessing_test.csv"
+    df = pd.read_csv(id_file, nrows=2000)
 
     # Choix entre drag and drop et sélection d'un ID
     choix = st.radio("Choisir une option :", ("Drag and drop", "Sélectionner un ID"))
