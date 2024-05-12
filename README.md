@@ -32,22 +32,43 @@ Le projet est structuré de la manière suivante :
 
 ## Installation
 
+0. Créer son environnement virtuel et l'activer (option conseillé)
+
+`python3 -m venv mon_env`
+
+`source mon_env/bin/activate`
+
 1. Cloner le dépôt GitHub :
 
 git clone https://github.com/Alex-s4d/Openclassrooms.git
 
 2. Installer les dépendances :
 
-pip install -r requirements.txt
+pip install -r requirements.txt 
+
+3. Importer les données
+
+Télécharger les données à cette adresse : https://www.kaggle.com/c/home-credit-default-risk/data
+et les placer dans le répertoire `input/`
 
 
 ## Utilisation
 
 1. Explorer les notebooks dans le répertoire `notebooks/` pour comprendre le processus de développement du modèle.
 
-2. Exécuter les scripts Python dans le répertoire `src/` pour prétraiter les données, entraîner le modèle, évaluer les performances, etc.
+2. Lancer le script du kernel kaggle pour la création des features via le script : `python3 -m src.preprocessing.py` 
 
-3. Utiliser les modèles entraînés dans le répertoire `models/` pour le scoring des clients.
+3. Lancer mlflow via la commande `mlflow ui`
+
+4. Exécuter le script `python3 -m src.train_new_model` pour prétraiter les données, entraîner un nouveau modèle, et évaluer les performances sur ML Flow.
+
+5. Configurer le model utiliser dans le script `api/app.py` parmis les choix du répertoire `models/` pour le scoring des clients.
+
+6. Lancer l'api via la commande python3 -m api.app
+
+7. Lancer le Dashboard via la commande streamlit run streamlit_app.py
+
+8. Le dashboard intéractif est prêt pour utilisation
 
 ## Auteurs
 
