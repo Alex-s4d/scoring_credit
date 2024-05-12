@@ -7,7 +7,8 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score, StratifiedKFold
 import pandas as pd
 import numpy as np
-from sklearn.metrics import fbeta_score, make_scorer, f1_score, roc_auc_score
+from sklearn.metrics import fbeta_score, make_scorer, f1_score, roc_auc_score, auc, roc_curve
+from sklearn import metrics
 from sklearn.metrics import confusion_matrix
 import lightgbm as lgb
 from skopt import BayesSearchCV
@@ -19,13 +20,24 @@ from collections import Counter
 from sklearn.linear_model import LogisticRegression
 from sklearn.dummy import DummyClassifier
 import mlflow.sklearn
+import joblib
+from pycaret.classification import *
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
 
-from src.data_loader2 import preprocessing, create_weight
+
+
+
+
+
+
+from src.data_loader import preprocessing, create_weight
 
 # Custom metric
 def custom_fbeta_score(y_true, y_pred):
     return fbeta_score(y_true, y_pred, beta=weight)
+
 
 #Hyperoptim
 def hyperoptim(X_train, y_train, model='LGBM'):
@@ -34,7 +46,7 @@ def hyperoptim(X_train, y_train, model='LGBM'):
 
         mlflow.lightgbm.autolog()
 
-        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        cv = StratifiedKFold(n_splits=4, shuffle=True, random_state=42)
         
         scorer = make_scorer(custom_fbeta_score)
         
@@ -56,7 +68,7 @@ def hyperoptim(X_train, y_train, model='LGBM'):
         clf = lgb.LGBMClassifier(silent=-1)
         
         # Initialiser BayesSearchCV avec le classifieur, l'espace des hyperparamètres et la validation croisée
-        bayes_search = BayesSearchCV(clf, param_space, cv=cv, scoring='roc_auc', n_jobs=-1)
+        bayes_search = BayesSearchCV(clf, param_space, cv=cv, scoring=scorer, n_jobs=-1)
         
         # Effectuer l'optimisation des hyperparamètres sur les données d'entraînement
         bayes_search.fit(X_train, y_train)
@@ -67,6 +79,8 @@ def hyperoptim(X_train, y_train, model='LGBM'):
         
         # Utiliser les meilleurs hyperparamètres pour initialiser le modèle final
         best_clf = lgb.LGBMClassifier(silent=-1, **best_params)
+
+        mlflow.lightgbm.autolog()
 
         return best_clf, best_params
     
@@ -90,6 +104,29 @@ def hyperoptim(X_train, y_train, model='LGBM'):
             best_params = None
 
             return best_clf, best_params
+    
+    elif model == 'Pycaret':
+            cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+            best_clf = joblib.load('models/my_best_pipeline.pkl')
+
+            best_params = None
+
+            return best_clf, best_params
+    
+    elif model == 'ExtraTreesClassifier':
+        mlflow.sklearn.autolog()
+        best_clf = ExtraTreesClassifier()
+        best_params = None
+        return best_clf, best_params
+    
+    elif model == 'QuadraticDiscriminantAnalysis':
+        mlflow.sklearn.autolog()
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        best_clf = QuadraticDiscriminantAnalysis()
+        best_params = None
+        return best_clf, best_params
+
 
     
 
@@ -99,7 +136,7 @@ def hyperoptim(X_train, y_train, model='LGBM'):
 # Training
 def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imbalance=None):
 
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    cv = StratifiedKFold(n_splits=4, shuffle=True, random_state=42)
 
     if imbalance==None:
 
@@ -118,11 +155,14 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
             
             # Faire des prédictions sur les données de test de ce fold
             predictions = best_clf.predict(X_test_fold)
+            predictions2 = best_clf.predict_proba(X_test_fold)
             
             # Calculer les scores
             score_custom = custom_fbeta_score(y_test_fold, predictions)
-            score_auc = roc_auc_score(y_test_fold, predictions)
+            #score_auc = roc_auc_score(y_test_fold, predictions)
             score_f1 = f1_score(y_test_fold, predictions)
+            fpr, tpr, thresholds = roc_curve(y_test_fold, predictions2[:,1])
+            score_auc = auc(fpr, tpr)
             
             # Ajouter les scores à la liste
             scores_custom.append(score_custom)
@@ -155,11 +195,14 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
 
         # Faire des prédictions sur les données de test
         predictions = best_clf.predict(X_test)
+        predictions2 = best_clf.predict_proba(X_test)
 
         # Calculer le score Beta
         beta_score = custom_fbeta_score(y_test, predictions)
-        score_auc = roc_auc_score(y_test, predictions)
+        #score_auc = roc_auc_score(y_test, predictions)
         score_f1 = f1_score(y_test, predictions)
+        fpr, tpr, thresholds = roc_curve(y_test, predictions2[:,1])
+        score_auc = auc(fpr, tpr)
 
         # Log des scores sur l'ensemble de test dans MLflow
         mlflow.log_metric("Custom Score Test", beta_score)
@@ -202,11 +245,14 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
             
             # Faire des prédictions sur les données de test de ce fold
             predictions = best_clf.predict(X_test_fold)
+            predictions2 = best_clf.predict_proba(X_test_fold)
             
             # Calculer les scores
             score_custom = custom_fbeta_score(y_test_fold, predictions)
-            score_auc = roc_auc_score(y_test_fold, predictions)
+            #score_auc = roc_auc_score(y_test_fold, predictions)
             score_f1 = f1_score(y_test_fold, predictions)
+            fpr, tpr, thresholds = roc_curve(y_test_fold, predictions2[:,1])
+            score_auc = auc(fpr, tpr)
             
             # Ajouter les scores à la liste
             scores_custom.append(score_custom)
@@ -243,11 +289,14 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
 
         # Faire des prédictions sur les données de test
         predictions = best_clf.predict(X_test)
+        predictions2 = best_clf.predict_proba(X_test)
 
         # Calcul des scores
         beta_score = custom_fbeta_score(y_test, predictions)
-        score_auc = roc_auc_score(y_test, predictions)
+        #score_auc = roc_auc_score(y_test, predictions)
         score_f1 = f1_score(y_test, predictions)
+        fpr, tpr, thresholds = roc_curve(y_test, predictions2[:,1])
+        score_auc = auc(fpr, tpr)
 
         # Log des scores sur l'ensemble de test dans MLflow
         mlflow.log_metric("Custom Score Test", beta_score)
@@ -291,11 +340,14 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
             
             # Faire des prédictions sur les données de test de ce fold
             predictions = best_clf.predict(X_test_fold)
+            predictions2 = best_clf.predict_proba(X_test_fold)
             
             # Calculer les scores
             score_custom = custom_fbeta_score(y_test_fold, predictions)
-            score_auc = roc_auc_score(y_test_fold, predictions)
+            #score_auc = roc_auc_score(y_test_fold, predictions)
             score_f1 = f1_score(y_test_fold, predictions)
+            fpr, tpr, thresholds = roc_curve(y_test_fold, predictions2[:,1])
+            score_auc = auc(fpr, tpr)
             
             # Ajouter les scores à la liste
             scores_custom.append(score_custom)
@@ -331,11 +383,14 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
 
         # Faire des prédictions sur les données de test
         predictions = best_clf.predict(X_test)
+        predictions2 = best_clf.predict_proba(X_test)
 
         # Calcul des scores
         beta_score = custom_fbeta_score(y_test, predictions)
-        score_auc = roc_auc_score(y_test, predictions)
+        #score_auc = roc_auc_score(y_test, predictions)
         score_f1 = f1_score(y_test, predictions)
+        fpr, tpr, thresholds = roc_curve(y_test, predictions2[:,1])
+        score_auc = auc(fpr, tpr)
 
         # Log des scores sur l'ensemble de test dans MLflow
         mlflow.log_metric("Custom Score Test", beta_score)
@@ -368,7 +423,8 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
         class_weights = get_class_weights(y_train)
         print(class_weights)
 
-        best_clf = lgb.LGBMClassifier(class_weight=class_weights,is_unbalance= True, **best_params)
+        #best_clf = lgb.LGBMClassifier(class_weight=class_weights,is_unbalance= True, **best_params)
+        best_clf = lgb.LGBMClassifier(class_weight=class_weights,is_unbalance= True)
 
         #CV
         scores_custom = []
@@ -385,11 +441,14 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
             
             # Faire des prédictions sur les données de test de ce fold
             predictions = best_clf.predict(X_test_fold)
+            predictions2 = best_clf.predict_proba(X_test_fold)
             
             # Calculer les scores
             score_custom = custom_fbeta_score(y_test_fold, predictions)
-            score_auc = roc_auc_score(y_test_fold, predictions)
+            #score_auc = roc_auc_score(y_test_fold, predictions)
             score_f1 = f1_score(y_test_fold, predictions)
+            fpr, tpr, thresholds = roc_curve(y_test_fold, predictions2[:,1])
+            score_auc = auc(fpr, tpr)
             
             # Ajouter les scores à la liste
             scores_custom.append(score_custom)
@@ -423,11 +482,14 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
 
         # Faire des prédictions sur les données de test
         predictions = best_clf.predict(X_test)
+        predictions2 = best_clf.predict_proba(X_test)
 
         # Calculer le score Beta
         beta_score = custom_fbeta_score(y_test, predictions)
-        score_auc = roc_auc_score(y_test, predictions)
+        #score_auc = roc_auc_score(y_test, predictions)
         score_f1 = f1_score(y_test, predictions)
+        fpr, tpr, thresholds = roc_curve(y_test, predictions2[:,1])
+        score_auc = auc(fpr, tpr)
 
         # Log des scores sur l'ensemble de test dans MLflow
         mlflow.log_metric("Custom Score Test", beta_score)
@@ -454,18 +516,22 @@ def imbalanced_training(X_train,X_test,y_train,y_test,best_clf,best_params, imba
 
 #  MLflow
 
-experiment_name = "LGBM SMOTE"
+experiment_name = "LGBM unbalanced"
 mlflow.set_experiment(experiment_name)
 
 
-with mlflow.start_run():
+with mlflow.start_run(run_name="LGBM Hyperoptim"):
 
     weight = create_weight()
+    print(weight)
 
     X_train, X_test, y_train, y_test = preprocessing(Sampling=None)
 
+    print(y_train.value_counts())
+    print(y_test.value_counts())
+
     best_model, best_params = hyperoptim(X_train,y_train,model='LGBM')
 
-    model = imbalanced_training(X_train,X_test,y_train,y_test,best_model,best_params, imbalance='SMOTE')
+    model = imbalanced_training(X_train,X_test,y_train,y_test,best_model,best_params, imbalance="Class weight")
 
     mlflow.lightgbm.log_model(model, "LGBM_model")

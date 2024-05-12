@@ -3,12 +3,14 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.model_selection import train_test_split
 from collections import Counter
+import re
 # Importation du package
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import ClusterCentroids
 
-
-
+def clean_feature_names(df):
+    df.columns = [re.sub(r'[^a-zA-Z0-9_]', '_', col) for col in df.columns]
+    return df
 
 def preprocessing(Sampling=None):
 
@@ -16,201 +18,95 @@ def preprocessing(Sampling=None):
 
         df = pd.read_csv('data/preprocessing_train.csv')
 
-        best_features = pd.read_csv('data/best_fetaures.csv')
-        feats = best_features['feature'].unique()
+        best_features = pd.read_csv('data/best_features.csv')
+        best_features = clean_feature_names(best_features)
+        feats = np.array(best_features.columns)
+        #feats = best_features['feature'].unique()
         feats = np.append(feats,'INTERET_CUMULE' )
+        df = clean_feature_names(df)
+
+        #feats = [f for f in df.columns if f not in ['TARGET', 'SK_ID_CURR', 'SK_ID_BUREAU', 'SK_ID_PREV', 'index']]
 
         df = df[df['TARGET'].notnull()]
 
-        # Sélectionner les colonnes de type int et float
-        numeric_columns = df[feats].select_dtypes(include=['int', 'float']).columns
-
+        X = df[feats]
+        
+        y = df['TARGET']
+        
+        # Diviser l'ensemble de données en ensembles d'entraînement et de test
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+        #
+        #Sélectionner les colonnes de type int et float dans l'ensemble d'entraînement
+        numeric_columns_train = X_train.select_dtypes(include=['int', 'float']).columns
+        
         # Initialiser le MinMaxScaler
         scaler = MinMaxScaler()
-
-        # Normaliser les colonnes sélectionnées
-        df[numeric_columns] = scaler.fit_transform(df[numeric_columns])
-
-        median_values = df[feats].median()
-
-        # Imputer les valeurs manquantes avec la médiane
-        df.fillna(median_values, inplace=True) 
-
-        X = df[feats]
-
-        y = df['TARGET']
-
-        # Diviser l'ensemble de données en ensembles d'entraînement, de validation et de test
-        X_train, X_hide_test, y_train, y_hide_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
-
-        # Diviser X_temp et y_temp pour obtenir le X_validation, y_validation, X_test, y_test
-        #X_hide_test, X_test, y_hide_test, y_test = train_test_split(X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=42)
-
+        
+        # Normaliser les colonnes sélectionnées sur l'ensemble d'entraînement
+        X_train[numeric_columns_train] = scaler.fit_transform(X_train[numeric_columns_train])
+        
+        # Appliquer la même transformation de normalisation à l'ensemble de test
+        X_test[numeric_columns_train] = scaler.transform(X_test[numeric_columns_train])
+        
+        # Imputer les valeurs manquantes avec la médiane de l'ensemble d'entraînement
+        median_values_train = X_train.median()
+        X_train.fillna(median_values_train, inplace=True)
+        X_test.fillna(median_values_train, inplace=True) 
         print(X_train.shape)
-        #print(X_test.shape)
-        print(X_hide_test.shape)
+        print(X_test.shape) 
+        
 
-        return X_train, X_hide_test, y_train, y_hide_test
-
-    elif Sampling == 'SMOTE':
-
-        df = pd.read_csv('data/preprocessing_train.csv')
-
-        best_features = pd.read_csv('data/best_fetaures.csv')
-        feats = best_features['feature'].unique()
-        feats = np.append(feats,'INTERET_CUMULE' )
-
-        df = df[df['TARGET'].notnull()]
-
-        # Sélectionner les colonnes de type int et float
-        numeric_columns = df[feats].select_dtypes(include=['int', 'float']).columns
-
-        # Initialiser le MinMaxScaler
-        scaler = MinMaxScaler()
-
-        # Normaliser les colonnes sélectionnées
-        df[numeric_columns] = scaler.fit_transform(df[numeric_columns])
-
-        median_values = df[feats].median()
-
-        # Imputer les valeurs manquantes avec la médiane
-        df.fillna(median_values, inplace=True) 
-
-        X = df[feats]
-
-        y = df['TARGET']
-
-        # Diviser l'ensemble de données en ensembles d'entraînement, de validation et de test
-        X_train, X_hide_test, y_train, y_hide_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
-
-        # Diviser X_temp et y_temp pour obtenir le X_validation, y_validation, X_test, y_test
-        #X_hide_test, X_test, y_hide_test, y_test = train_test_split(X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=42)
-
-        print(X_train.shape)
-        #print(X_test.shape)
-        print(X_hide_test.shape)
-
-        counter = Counter(y_train)
-        print(f'Répartition de la target avant SMOTE : {counter}')
-              
-        smote = SMOTE(random_state=2)
-
-        # Appliquer SMOTE sur les données
-        X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
-
-        counter = Counter(y_resampled)
-        print(f'Répartition de la target Après SMOTE : {counter}')
-
-
-        return X_resampled , X_hide_test, y_resampled, y_hide_test
+        return X_train, X_test, y_train,y_test
     
+    elif Sampling == 'Small':
 
-    elif Sampling == 'Undersampling':
-
-        df = pd.read_csv('data/preprocessing_train.csv')
+        df = pd.read_csv('data/preprocessing_train.csv',nrows=300)
 
         best_features = pd.read_csv('data/best_fetaures.csv')
         feats = best_features['feature'].unique()
         feats = np.append(feats,'INTERET_CUMULE' )
 
-        df = df[df['TARGET'].notnull()]
-
-        # Sélectionner les colonnes de type int et float
-        numeric_columns = df[feats].select_dtypes(include=['int', 'float']).columns
-
+        X = df[feats]
+        
+        y = df['TARGET']
+        
+        # Diviser l'ensemble de données en ensembles d'entraînement et de test
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+        
+        # Sélectionner les colonnes de type int et float dans l'ensemble d'entraînement
+        numeric_columns_train = X_train.select_dtypes(include=['int', 'float']).columns
+        
         # Initialiser le MinMaxScaler
         scaler = MinMaxScaler()
-
-        # Normaliser les colonnes sélectionnées
-        df[numeric_columns] = scaler.fit_transform(df[numeric_columns])
-
-        median_values = df[feats].median()
-
-        # Imputer les valeurs manquantes avec la médiane
-        df.fillna(median_values, inplace=True) 
-
-        X = df[feats]
-
-        y = df['TARGET']
-
-        # Diviser l'ensemble de données en ensembles d'entraînement, de validation et de test
-        X_train, X_hide_test, y_train, y_hide_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+        
+        # Normaliser les colonnes sélectionnées sur l'ensemble d'entraînement
+        X_train[numeric_columns_train] = scaler.fit_transform(X_train[numeric_columns_train])
+        
+        # Appliquer la même transformation de normalisation à l'ensemble de test
+        X_test[numeric_columns_train] = scaler.transform(X_test[numeric_columns_train])
+        
+        # Imputer les valeurs manquantes avec la médiane de l'ensemble d'entraînement
+        median_values_train = X_train.median()
+        X_train.fillna(median_values_train, inplace=True)
+        X_test.fillna(median_values_train, inplace=True) 
 
         print(X_train.shape)
-        #print(X_test.shape)
-        print(X_hide_test.shape)
+        print(X_test.shape) 
+        print(y_train.value_counts())
+        print(y_test.value_counts()) 
 
-        counter = Counter(y_train)
-        print(f'Répartition de la target avant Undersampling: {counter}')
-              
-        smote = SMOTE(random_state=42)
-
-        # Appliquer Undersampling sur les données
-        cc = ClusterCentroids(sampling_strategy='auto', random_state=42)
-
-
-        X_resampled, y_resampled = cc.fit_resample(X_train, y_train)
-
-        counter = Counter(y_resampled)
-        print(f'Répartition de la target Après Undersampling : {counter}')
-
-
-        return X_resampled, X_hide_test, y_resampled, y_hide_test 
-    
-    if Sampling == 'Small':
-
-        df = pd.read_csv('data/preprocessing_train.csv')
-
-        best_features = pd.read_csv('data/best_fetaures.csv')
-        feats = best_features['feature'].unique()
-        feats = np.append(feats,'INTERET_CUMULE' )
-
-        df = df[df['TARGET'].notnull()][0:300]
-
-        # Sélectionner les colonnes de type int et float
-        numeric_columns = df[feats].select_dtypes(include=['int', 'float']).columns
-
-        # Initialiser le MinMaxScaler
-        scaler = StandardScaler()
-
-        # Normaliser les colonnes sélectionnées
-        df[numeric_columns] = scaler.fit_transform(df[numeric_columns])
-
-        median_values = df[numeric_columns].median()
-
-        # Imputer les valeurs manquantes avec la médiane
-        df.fillna(median_values, inplace=True) 
-
-        X = df[feats]
-
-        y = df['TARGET']
-
-        # Diviser l'ensemble de données en ensembles d'entraînement, de validation et de test
-        X_train, X_hide_test, y_train, y_hide_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
-
-        # Diviser X_temp et y_temp pour obtenir le X_validation, y_validation, X_test, y_test
-        #X_hide_test, X_test, y_hide_test, y_test = train_test_split(X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=42)
-
-        print(X_train.shape)
-        #print(X_test.shape)
-        print(X_hide_test.shape)
-
-        return X_train, X_hide_test, y_train, y_hide_test
+        return X_train, X_test, y_train, y_test
         
     
     else:
         print('parameter not recognized')
 
-    return X_train, X_hide_test, y_train, y_hide_test
+    return X_train, X_test, y_train, y_test
 
 def create_weight():
     # Custom metric
 
     df = pd.read_csv('data/preprocessing_train.csv')
-
-    best_features = pd.read_csv('data/best_fetaures.csv')
-    feats = best_features['feature'].unique()
-    feats = np.append(feats,'INTERET_CUMULE' )
 
     df = df[df['TARGET'].notnull()]
 
@@ -226,13 +122,10 @@ def create_weight():
     print(f"Un client n'ayant pas remboursé son crédit fait perdre en moyenne {round(( perte_client_1/gain_client_0),4)} plus que les clients ayant remboursé")
 
     # Minimisation des Faux négatifs pour maximiser les gains
-    weight =  gain_client_0 / perte_client_1 
+    weight =  perte_client_1 / gain_client_0 
 
 
     return weight
-
-
-#X_train, X_test, X_hide_test, y_train, y_test, y_hide_test = preprocessing()
 
 
 
