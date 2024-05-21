@@ -1,9 +1,58 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from api import predict
 import plotly.graph_objects as go
 import json
 import ast
+import matplotlib.pyplot as plt
+from matplotlib.patches import Wedge
+
+# Fonction pour dessiner le cadran
+import plotly.graph_objects as go
+
+def draw_gauge(score):
+    score = 100 - score
+
+    # Création de la jauge avec une aiguille
+    fig = go.Figure(go.Indicator(
+        mode = "gauge+number+delta",
+        value = score,
+        title = {'text': "Scoring crédit"},
+        delta = {
+            'reference': 50,
+        },
+        gauge = {
+            'axis': {'range': [0, 100]},
+            'bar': {'thickness': 0},  # On enlève la barre en définissant son épaisseur à 0
+            'bgcolor': "white",
+            'borderwidth': 2,
+            'bordercolor': "gray",
+            'steps': [
+                {'range': [0, 25], 'color': "red"},
+                {'range': [25, 50], 'color': "orange"},
+                {'range': [50, 75], 'color': "yellow"},
+                {'range': [75, 100], 'color': "green"}
+            ],
+            'threshold': {
+                'line': {'color': "black", 'width': 4},
+                'thickness': 0.75,
+                'value': score
+            }
+        }
+    ))
+
+    annotations = [
+        dict(x=0.20, y=-0.25, showarrow=False, text="Risque très élevé", font=dict(color="red")),
+        dict(x=0.43, y=-0.25, showarrow=False, text="Risque élevé", font=dict(color="orange")),
+        dict(x=0.57, y=-0.25, showarrow=False, text="Risque modéré", font=dict(color="yellow")),
+        dict(x=0.77, y=-0.25, showarrow=False, text="Risque faible", font=dict(color="green"))
+    ]
+
+    fig.update_layout(annotations=annotations)
+
+    return fig
+
 
 def main():
     st.title('Dashboard Scoring crédit :')
@@ -14,6 +63,7 @@ def main():
     # Choix entre drag and drop et sélection d'un ID
     choix = st.radio("Choisir une option :", ("Drag and drop", "Sélectionner un ID"))
 
+# Intégrer ce code dans votre application Streamlit
     if choix == "Drag and drop":
         # Sélectionner le fichier CSV à utiliser pour les prédictions
         uploaded_file = st.file_uploader("Choisir un fichier CSV", type=['csv'])
@@ -24,15 +74,19 @@ def main():
             # Afficher les 5 premières lignes du fichier CSV chargé
             ids_df = pd.read_csv(uploaded_file)
 
-            # Bouton pour effectuer les prédictions
+                # Bouton pour effectuer les prédictions
         if st.button('Effectuer les prédictions'):
             with st.spinner('Prédiction en cours...'):
                 # Exécuter la fonction de prédiction avec le fichier CSV chargé
                 prediction = predict.main(ids_df)
-
             # Afficher la prédiction
             st.subheader('Prédiction :')
+            score = round(prediction['probability']*100,4)
             st.write(prediction['prediction'])
+            
+            # Dessiner et afficher le cadran
+            fig = draw_gauge(score)
+            st.plotly_chart(fig)
 
             # Afficher les caractéristiques importantes
             feature_importances = prediction['feature_importances']
@@ -142,6 +196,11 @@ def main():
             # Afficher la prédiction
             st.subheader('Prédiction :')
             st.write(prediction['prediction'])
+
+            score = round(prediction['probability']*100,4)
+
+            fig = draw_gauge(score)
+            st.plotly_chart(fig)
 
             # Afficher les caractéristiques importantes
             feature_importances = prediction['feature_importances']
