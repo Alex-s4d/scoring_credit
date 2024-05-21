@@ -66,7 +66,7 @@ class ScoringCredit(BaseModel):
     CLOSED_DAYS_CREDIT_ENDDATE_MIN: Optional[float]
     CLOSED_DAYS_CREDIT_MAX: Optional[float]
     CLOSED_DAYS_CREDIT_VAR: Optional[float]
-    CODE_GENDER: Optional[str]
+    CODE_GENDER: Optional[float]
     COMMONAREA_AVG: Optional[float]
     DAYS_BIRTH: Optional[int]
     DAYS_EMPLOYED: Optional[float]
