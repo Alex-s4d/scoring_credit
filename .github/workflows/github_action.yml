@@ -38,7 +38,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22 
           script: |
-            cd scoring credit
+            cd scoring_credit
             git pull
             cd ..
             sudo systemctl restart docker
