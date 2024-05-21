@@ -60,7 +60,7 @@ def preprocessing(Sampling=None):
     
     elif Sampling == 'Small':
 
-        df = pd.read_csv('data/preprocessing_train.csv',nrows=300)
+        df = pd.read_csv('data/preprocessing_train.csv',nrows=10000)
 
         best_features = pd.read_csv('data/best_fetaures.csv')
         feats = best_features['feature'].unique()
