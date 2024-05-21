@@ -162,4 +162,4 @@ class ScoringCredit(BaseModel):
     REFUSED_RATE_DOWN_PAYMENT_MIN: Optional[float]
     REGION_RATING_CLIENT_W_CITY: Optional[float]
     REG_CITY_NOT_WORK_CITY: Optional[float]
-    INTERET_CUMULE= Optional[float]
+    INTERET_CUMULE: Optional[float]
