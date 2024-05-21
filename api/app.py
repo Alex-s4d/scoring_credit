@@ -75,7 +75,9 @@ def predict_scoringcredit(data: ScoringCredit):
 
 
     # Interprétation de la prédiction
-    prediction_label = f"Risque de faillite de {round(positive_probability*100,4)}% crédit refusé" if prediction == 1 else f"Risque de faillite de {round(positive_probability*100,4)}% crédit accepté"
+    #prediction_label = f"Risque de faillite de {round(positive_probability*100,4)}% crédit refusé" if prediction == 1 else f"Risque de faillite de {round(positive_probability*100,4)}% crédit accepté"
+    prediction_label = round(positive_probability*100)
+
 
     response = {
         "prediction": prediction_label,
