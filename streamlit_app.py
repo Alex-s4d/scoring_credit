@@ -12,7 +12,8 @@ from matplotlib.patches import Wedge
 import plotly.graph_objects as go
 
 def draw_gauge(score):
-    score = 100 - score
+    
+    score = 100 - (score*100)
 
     # Création de la jauge avec une aiguille
     fig = go.Figure(go.Indicator(
@@ -81,7 +82,7 @@ def main():
                 prediction = predict.main(ids_df)
             # Afficher la prédiction
             st.subheader('Prédiction :')
-            score = round(prediction['probability']*100,4)
+            score = prediction['probability']
             st.write(prediction['prediction'])
             
             # Dessiner et afficher le cadran
@@ -197,7 +198,7 @@ def main():
             st.subheader('Prédiction :')
             st.write(prediction['prediction'])
 
-            score = round(prediction['probability']*100,4)
+            score = prediction['probability']
 
             fig = draw_gauge(score)
             st.plotly_chart(fig)
