@@ -180,7 +180,7 @@ def main(new_data):
             scoring_credit_dict[key] = "{:.6f}".format(value)
 
     # Définissez l'URL de votre API
-    url = 'http://0.0.0.0:8000/predict'
+    url = 'http://13.38.9.787:8000/predict'
 
     # Envoyez la requête POST à votre API avec les données JSON
     response = requests.post(url, json=scoring_credit_dict)
