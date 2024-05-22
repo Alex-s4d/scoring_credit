@@ -9,7 +9,7 @@ app = FastAPI()
 
 # Charger le modèle
 try:
-    classifier = joblib.load('models/pipeline_final.pkl')
+    classifier = joblib.load('models/lgbm_optim_model.pkl')
 except Exception as e:
     print("Erreur lors du chargement du modèle :", e)
 
@@ -75,7 +75,7 @@ def predict_scoringcredit(data: ScoringCredit):
 
 
     # Interprétation de la prédiction
-    prediction_label = f"Risque de faillite de {round(positive_probability*100,4)}% crédit refusé" if prediction == 1 else f"Risque de faillite de {round(positive_probability*100,4)}% crédit accepté"
+    prediction_label = f"Risque de faillite de {round(positive_probability*100)}% crédit refusé" if prediction == 1 else f"Risque de faillite de {round(positive_probability*100)}% crédit accepté"
     #prediction_label = round(positive_probability*100)
 
 
