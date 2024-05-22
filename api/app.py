@@ -9,7 +9,7 @@ app = FastAPI()
 
 # Charger le modèle
 try:
-    classifier = joblib.load('models/lgbm_optim_model.pkl')
+    classifier = joblib.load('models/my_best_pipeline.pkl')
 except Exception as e:
     print("Erreur lors du chargement du modèle :", e)
 
