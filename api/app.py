@@ -4,8 +4,21 @@ from fastapi import FastAPI
 from src.ScoringCredits import ScoringCredit
 from sklearn.pipeline import Pipeline
 import uvicorn
+import numpy as np
+import re
+
 
 app = FastAPI()
+
+def clean_feature_names(df):
+    df.columns = [re.sub(r'[^a-zA-Z0-9_]', '_', col) for col in df.columns]
+    return df
+
+best_features = pd.read_csv('data/best_features.csv')
+best_features = clean_feature_names(best_features)
+feats = np.array(best_features.columns)
+feats = np.append(feats,'INTERET_CUMULE' )
+
 
 # Charger le modèle
 try:
@@ -32,12 +45,17 @@ def predict_scoringcredit(data: ScoringCredit):
     # Utiliser la pipeline pour effectuer des prédictions de probabilité
     if hasattr(classifier, 'predict_proba'):
         # Prédiction des probabilités
-        probabilities = classifier.predict_proba(input_data)
+        probabilities = classifier.predict_proba(input_data[feats])
+        print("---------------------------------------------------------",
+              "probability : " , probabilities, " !!")
         # Sélectionner la probabilité de la classe positive (classe 1)
         positive_probability = probabilities[0][1]
 
     # Prédiction de la classe
-    prediction = classifier.predict(input_data)
+    prediction_label = classifier.predict(input_data[feats])
+    
+    print("---------------------------------------------------------",
+              "label : " , prediction_label, " !!")
 
     
     feature_names = input_data.columns
@@ -75,8 +93,8 @@ def predict_scoringcredit(data: ScoringCredit):
 
 
     # Interprétation de la prédiction
-    prediction_label = f"Risque de faillite de {round(positive_probability*100)}% crédit refusé" if prediction == 1 else f"Risque de faillite de {round(positive_probability*100)}% crédit accepté"
-    #prediction_label = round(positive_probability*100)
+    prediction_label = f"Risque de faillite de {round(positive_probability*100)}% crédit refusé" if prediction_label == 1 else f"Risque de faillite de {round(positive_probability*100)}% crédit accepté"
+    
 
 
     response = {
